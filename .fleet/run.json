@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "type": "command",
+            "name" : "👀 Watch",
+            "workingDir": "./",
+            "program": "dotnet",
+            "args": ["watch", "--project", "BlazorTodo", "-lp", "https" ],
+        },
+
+    ]
+}

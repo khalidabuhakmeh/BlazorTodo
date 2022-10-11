@@ -1,0 +1,131 @@
+﻿@page "/"
+@using System.Collections.Immutable
+@inject IJSRuntime JsRuntime
+
+<div class="container mt-3">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>📝 My Tasks </h1>
+            <hr/>
+        </div>
+    </div>
+    <div class="input-group mb-3">
+        <form @onsubmit="@Submit" class="container-fluid">
+            <div class="input-group">
+                <div class="input-group-text">
+                    <input @ref="_start" class="form-check-input mt-0" type="checkbox" checked="@(Current.IsComplete ? "checked" : null)" aria-label="Is Complete?" @onchange="@(() => Toggle(Current))">
+                </div>
+                <input type="text" class="form-control" @bind-value="Current.Text" @bind-value:event="oninput" aria-label="Text input with checkbox">
+                <button class="btn btn-success" type="submit" id="button-addon2">+ Add</button>
+            </div>
+        </form>
+    </div>
+
+    @if (Todos is { Count: 0 })
+    {
+        <div class="row">
+            <div class="col-md-12 alert alert-primary" role="alert">
+                Currently No Todos
+            </div>
+        </div>
+    }
+
+    @if (Incomplete is { Count: >0})
+    {
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <h2>🤔 Outstanding</h2>
+                <hr class="mb-2"/>
+                <ul class="list-group">
+                    @foreach (var todo in Incomplete)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <input class="form-check-input me-1" id="@todo.Id" type="checkbox" checked="@(todo.IsComplete ? "checked" : null)" @onchange="@(() => Toggle(todo))">
+                                <label class="form-check-label" for="@todo.Id">@todo.Text</label>
+                            </div>
+                            <button class="btn btn-sm btn-danger" @onclick="@(() => Remove(todo))">remove</button>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+        </div>
+    }
+
+    @if (Complete is { Count: >0 })
+    {
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <h2>✅ Completed</h2>
+                <hr class="mb-2"/>
+                <ul class="list-group">
+                    @foreach (var todo in Complete)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <input class="form-check-input me-1" id="@todo.Id" type="checkbox" checked="@(todo.IsComplete ? "checked" : null)" @onchange="@(() => Toggle(todo))">
+                                <label class="form-check-label" for="@todo.Id">@todo.Text</label>
+                            </div>
+                            <button class="btn btn-sm btn-danger" @onclick="@(() => Remove(todo))">remove</button>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+</div>
+
+@code
+{
+    private ElementReference _start;
+
+    public class Todo
+    {
+        public string Id { get; } = Guid.NewGuid().ToString("N");
+        public string Text { get; set; } = "";
+        public bool IsComplete { get; set; }
+    }
+
+    private Todo Current { get; set; } = new();
+    private List<Todo> Todos { get; set; } = new();
+    private IReadOnlyList<Todo> Incomplete => Todos.Where(x => !x.IsComplete).ToImmutableList();
+    private IReadOnlyList<Todo> Complete => Todos.Where(x => x.IsComplete).ToImmutableList();
+
+    private void AddTodo()
+    {
+        Todos.Add(Current);
+        Current = new();
+        StateHasChanged();
+    }
+
+    private void Toggle(Todo todo)
+    {
+        todo.IsComplete = !todo.IsComplete;
+    }
+
+    private void Remove(Todo todo)
+    {
+        Todos.Remove(todo);
+        StateHasChanged();
+    }
+
+    private async Task Submit()
+    {
+        AddTodo();
+        await Refocus();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Refocus();
+        }
+    }
+
+    private async Task Refocus()
+    {
+        await JsRuntime.InvokeVoidAsync("SetFocusToElement", _start);
+    }
+}
